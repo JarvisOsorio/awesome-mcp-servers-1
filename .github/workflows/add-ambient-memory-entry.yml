@@ -1,0 +1,43 @@
+name: Add ambient-memory entry
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/add-ambient-memory-entry.yml
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: add-ambient-memory
+      - name: Insert entry
+        run: |
+          python3 << 'PY'
+          from pathlib import Path
+          path = Path('docs/knowledge-management--memory.md')
+          text = path.read_text()
+          entry = '- [JarvisOsorio/ambient-memory](https://github.com/JarvisOsorio/ambient-memory): Zero-config local ambient memory for AI agents — passive file/session indexing, AES-GCM vault, FTS5 search, daemon-owned SQLite over IPC. Install: `npx -y ambient-memory mcp`. Transport: `stdio`; no auth; clients: Cursor, Claude Desktop, and compatible MCP clients; MIT. Platforms: macOS, Windows, Linux.'
+          if 'JarvisOsorio/ambient-memory' in text:
+              print('already present')
+          else:
+              needle = '- [michielinksee/linksee-memory]'
+              idx = text.find(needle)
+              if idx < 0:
+                  raise SystemExit('anchor not found')
+              eol = text.find('\n', idx)
+              path.write_text(text[:eol+1] + entry + '\n' + text[eol+1:])
+              print('inserted')
+          PY
+      - name: Remove workflow
+        run: rm -f .github/workflows/add-ambient-memory-entry.yml
+      - name: Commit and push
+        run: |
+          git config user.name "Jarvis Osorio"
+          git config user.email "59590864+JarvisOsorio@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet && echo 'nothing to commit' && exit 0
+          git commit -m "Add JarvisOsorio/ambient-memory to Knowledge Management & Memory"
+          git push origin HEAD:add-ambient-memory
